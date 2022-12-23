@@ -24,13 +24,18 @@ SUPPORTED_REGIONS = [
 LOGGER = logging.getLogger("encounters")
 
 
-def get_encounters(region):
+def get_encounters(region, valid_areas=None):
     """Fetches a random encounter for each area in the given Pokearth 'region',
-       returned as a dictionary of {'area': 'encounter'}"""
+       returned as a dictionary of {'area': 'encounter'}. Limits rolls to the
+       given list of 'areas', if non-None."""
     encounters = {}
     areas = get_areas(region)
     LOGGER.debug("Found %d areas in %s", len(areas), region)
     for area, area_page in areas.items():
+        if valid_areas and area not in valid_areas:
+            LOGGER.debug("Skipping invalid area: %s", area)
+            continue
+
         LOGGER.info("Looking up random encounters for %s...", area)
         pokemon = get_random_encounter(area_page, region)
         if not pokemon:
@@ -40,6 +45,14 @@ def get_encounters(region):
         encounters[area] = pokemon
 
     return encounters
+
+
+def list_areas(region):
+    """Fetches & prints the list of areas for 'region'"""
+    areas = get_areas(region)
+    LOGGER.debug("Found %d areas in %s", len(areas), region)
+    for area in areas.keys():
+        print(area)
 
 
 def get_random_encounter(area_page, region):
@@ -146,8 +159,15 @@ def parse_args():
         description="Generates randomized encounters for each area in a "
                     "region")
     parser.add_argument(
-        "region", choices=SUPPORTED_REGIONS,
-        help="Pokearth region to generate encounters for")
+        "region", metavar="REGION", choices=SUPPORTED_REGIONS,
+        help="Pokearth REGION to generate encounters for")
+    parser.add_argument(
+        "-l", "--list", action="store_true",
+        help="List available areas & exit")
+    parser.add_argument(
+        "-a", "--area", action="append", metavar="AREA", default=None,
+        help="Limit rolls to just the given AREA. May be added multiple "
+             "times for multiple areas")
     parser.add_argument(
         "-v", "--verbose", action="count", default=0,
         help="Increase logging verbosity. May be added multiple times.")
@@ -165,8 +185,11 @@ def run():
     else:
         LOGGER.setLevel(logging.WARNING)
 
-    encounters = get_encounters(args.region)
-    print_encounters(encounters)
+    if args.list:
+        list_areas(args.region)
+    else:
+        encounters = get_encounters(args.region, valid_areas=args.area)
+        print_encounters(encounters)
 
 
 if __name__ == "__main__":
