@@ -1,9 +1,11 @@
+"""Defines html parsing classes"""
+
 from html.parser import HTMLParser
 
 
 class FormParser(HTMLParser):
     """Parses simple, depth-1 forms & the options within them into
-       <obj>.forms"""    
+       <obj>.forms"""
     def __init__(self):
         """FormParser constructor"""
         super().__init__()
@@ -68,7 +70,7 @@ class TableParser(HTMLParser):
             self._cur_rows[self.depth] = []
         elif tag == "td":
             self._cur_data[self.depth] = []
-        
+
     def handle_endtag(self, tag):
         """Handles </table>, </tr> & </td> tags"""
         if self.depth == 0:
@@ -103,4 +105,3 @@ class TableParser(HTMLParser):
             return
 
         self._cur_data[self.depth].append(data)
-
